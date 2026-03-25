@@ -1,0 +1,265 @@
+<!DOCTYPE html>
+<html lang="bn">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Rahman_Furniture_System</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Tiro+Bangla&display=swap');
+        :root { --navy: #001f3f; --light-navy: #f0f4f8; }
+        * { box-sizing: border-box; -webkit-print-color-adjust: exact; }
+        body { background-color: #f0f0f0; font-family: 'Times New Roman', 'Tiro Bangla', serif; margin: 0; padding: 0; }
+
+        .page {
+            width: 210mm; height: 296mm; padding: 10mm 12mm; margin: 10px auto;
+            background: white; position: relative; border: 1px solid #ddd; display: block;
+            overflow: hidden;
+        }
+
+        .header-top { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 10px; }
+        
+        /* Left Side: Logo + Info */
+        .header-left { display: flex; align-items: center; gap: 15px; text-align: left; }
+        .header-info h1 { margin: 0; font-size: 28px; font-family: 'Times New Roman'; color: #001f3f; }
+        .header-info p { margin: 2px 0; font-size: 13px; font-weight: bold; }
+
+        /* Right Side: Date/Time */
+        .date-section { 
+            border: 1.5px solid #000; padding: 8px 12px; 
+            display: flex; flex-direction: column; align-items: flex-end; 
+            font-weight: bold; min-width: 160px; background: #f9f9f9;
+        }
+
+        .settlement-title { text-align: center; text-decoration: underline; color: #336699; font-size: 22px; margin: 10px 0; font-weight: bold; }
+        .settlement-table { width: 100%; border-collapse: collapse; margin-bottom: 15px; position: relative; z-index: 1; }
+        .settlement-table th, .settlement-table td { border: 1.5px solid #000; padding: 6px; text-align: center; font-size: 14px; }
+        .settlement-table input { border: none; width: 100%; text-align: center; font-family: inherit; font-size: 14px; outline: none; background: transparent; }
+        .total-label { text-align: right !important; font-weight: bold; background: #f9f9f9; }
+
+        /* Menu Styles */
+        .menu-container { position: fixed; top: 15px; right: 20px; z-index: 1000; }
+        .three-dot { font-size: 28px; cursor: pointer; color: white; background: #333; width: 45px; height: 45px; display: flex; align-items: center; justify-content: center; border-radius: 50%; box-shadow: 0 4px 8px rgba(0,0,0,0.3); }
+        .dropdown-content { display: none; position: absolute; right: 0; background: white; min-width: 220px; box-shadow: 0px 8px 16px rgba(0,0,0,0.2); border-radius: 8px; overflow: hidden; }
+        .dropdown-content a { color: black; padding: 12px 16px; text-decoration: none; display: block; border-bottom: 1px solid #eee; font-size: 14px; cursor: pointer; font-weight: bold; }
+        .dropdown-content a:hover { background: #f1f1f1; }
+
+        /* Watermark */
+        .watermark-main { 
+            position: absolute; top: 55%; left: 50%; transform: translate(-50%, -50%); 
+            opacity: 0.08; width: 65%; pointer-events: none; z-index: 0; 
+        }
+
+        input[type=number]::-webkit-inner-spin-button, input[type=number]::-webkit-outer-spin-button { -webkit-appearance: none; margin: 0; }
+        input[type=number] { -moz-appearance: textfield; }
+
+        /* Oil Box Styling */
+        .oil-input-container { display: flex; border-bottom: 1px solid #ccc; margin-bottom: 5px; }
+        .oil-item { display: flex; align-items: center; flex: 1; border-right: 1px solid #ccc; padding: 8px 2px; }
+        .oil-item:last-child { border-right: none; }
+        .oil-item input { border: none; width: 100%; text-align: center; outline: none; font-size: 16px; font-weight: bold; background: transparent; }
+
+        @media print {
+            @page { size: A4; margin: 0; }
+            .no-print { display: none !important; }
+            .page { margin: 0; border: none; box-shadow: none; height: 296mm; }
+            input::placeholder { color: transparent !important; }
+            body { background: white; }
+        }
+    </style>
+</head>
+<body>
+
+<div class="menu-container no-print">
+    <div class="three-dot" onclick="toggleMenu()">⋮</div>
+    <div id="myDropdown" class="dropdown-content">
+        <a onclick="switchPage('invoice')">📄 Invoice Creator</a>
+        <a onclick="switchPage('settlement')">🚚 Delivery Settlement</a>
+        <a onclick="exportData()">💾 Backup Data (Download)</a>
+        <a onclick="document.getElementById('importFile').click()">📂 Restore Data (Upload)</a>
+        <input type="file" id="importFile" hidden onchange="importData(this)">
+    </div>
+</div>
+
+<div class="no-print" style="text-align:center; padding: 10px; background: #333; position: sticky; top: 0; z-index: 99;">
+    <button onclick="window.print()" style="padding: 10px 20px; background: #28a745; color: white; border: none; cursor: pointer; border-radius: 5px; font-weight: bold;">Print / Save PDF</button>
+    <button onclick="location.reload()" style="padding: 10px 20px; background: #dc3545; color: white; border: none; cursor: pointer; border-radius: 5px; margin-left:10px;">Reset Page</button>
+</div>
+
+<div id="settlement-page" class="page">
+    <img class="watermark-main" id="settlement-watermark" src="" alt="">
+    
+    <div class="header-top">
+        <div class="header-left">
+            <div style="width: 85px;">
+                <img id="set-logo" src="" style="width: 100%; display: none;">
+            </div>
+            <div class="header-info">
+                <h1>RAHMAN FURNITURE</h1>
+                <p>Madaninagar, Gol Chattar 2nd Goli, Chittagong Road</p>
+                <p>Siddhirganj, Narayanganj</p>
+                <p>Phone: 01794-526688</p>
+            </div>
+        </div>
+        <div class="date-section">
+            <span id="real-date" style="font-size: 15px;">Date: DD/MM/YYYY</span>
+            <span id="real-time" style="font-size: 14px; color: #333; margin-top: 4px;">Time: 00:00:00</span>
+        </div>
+    </div>
+
+    <div class="settlement-title">Final Delivery Settlement</div>
+
+    <table class="settlement-table" style="background: #fafafa;">
+        <tr>
+            <td width="15%" style="text-align: left; font-weight: bold;">Route/Location:</td>
+            <td width="35%"><input type="text" placeholder="e.g. Dhaka to Sylhet"></td>
+            <td width="15%" style="text-align: left; font-weight: bold;">Drop Points:</td>
+            <td width="35%"><input type="text" placeholder="e.g. 3 Points"></td>
+        </tr>
+        <tr>
+            <td style="text-align: left; font-weight: bold;">Driver Name:</td>
+            <td><input type="text" placeholder="Driver's full name"></td>
+            <td style="text-align: left; font-weight: bold;">Labour Name(s):</td>
+            <td><input type="text" placeholder="Names of assigned labours"></td>
+        </tr>
+    </table>
+
+    <table class="settlement-table">
+        <thead>
+            <tr>
+                <th width="10%">SL No.</th>
+                <th width="25%">Invoice No.</th>
+                <th width="35%">Sales person</th>
+                <th width="30%">Amount</th>
+            </tr>
+        </thead>
+        <tbody id="settlement-items">
+            <tr><td>1.</td><td><input type="text"></td><td><input type="text"></td><td><input type="number" class="set-amt" oninput="calcSettlement()"></td></tr>
+            <tr><td>2.</td><td><input type="text"></td><td><input type="text"></td><td><input type="number" class="set-amt" oninput="calcSettlement()"></td></tr>
+            <tr><td>3.</td><td><input type="text"></td><td><input type="text"></td><td><input type="number" class="set-amt" oninput="calcSettlement()"></td></tr>
+        </tbody>
+        <tfoot>
+            <tr>
+                <td colspan="3" class="total-label" style="color: red;">Total</td>
+                <td><input type="text" id="set-total-amt" readonly style="font-weight: bold;"></td>
+            </tr>
+        </tfoot>
+    </table>
+
+    <div style="color: red; font-weight: bold; text-align: center; margin-bottom: 5px;">Total Delivery Expenses</div>
+    <table class="settlement-table">
+        <tr>
+            <td width="20%" style="font-weight: bold;">Oil (Multiple)</td>
+            <td width="30%" style="padding: 0;">
+                <div class="oil-input-container">
+                    <div class="oil-item"><input type="number" class="oil-part" oninput="calcOil()"></div>
+                    <div class="oil-item"><input type="number" class="oil-part" oninput="calcOil()"></div>
+                    <div class="oil-item"><input type="number" class="oil-part" oninput="calcOil()"></div>
+                    <div class="oil-item"><input type="number" class="oil-part" oninput="calcOil()"></div>
+                </div>
+                <input type="number" class="exp-input" id="total-oil" readonly placeholder="Total Oil Cost" style="background: #e8f4f8; font-weight: bold; font-size: 16px; padding: 5px 0;">
+            </td>
+            <td width="20%">Mileage</td><td width="30%"><input type="text"></td>
+        </tr>
+        <tr>
+            <td>Toll</td><td><input type="number" class="exp-input" oninput="calcSettlement()"></td>
+            <td>Labour Cost</td><td><input type="number" class="exp-input" oninput="calcSettlement()"></td>
+        </tr>
+        <tr>
+            <td>Driver Meal</td><td><input type="number" class="exp-input" oninput="calcSettlement()"></td>
+            <td rowspan="2" colspan="2" style="background: #eee;"></td>
+        </tr>
+        <tr>
+            <td>Other Expenses</td><td><input type="number" class="exp-input" oninput="calcSettlement()"></td>
+        </tr>
+        <tr>
+            <td colspan="3" class="total-label" style="color: red;">Total</td>
+            <td><input type="text" id="set-total-exp" readonly style="font-weight: bold; font-size: 16px;"></td>
+        </tr>
+    </table>
+
+    <table class="settlement-table" style="width: 70%; margin: 20px 0;">
+        <tr>
+            <td style="text-align: left; color: #003366; font-weight: bold;">Total Amount</td>
+            <td width="40%"><input type="text" id="sum-total" readonly style="font-weight: bold; font-size: 15px;"></td>
+        </tr>
+        <tr>
+            <td style="text-align: left; color: red; font-weight: bold;">Total Delivery Expenses</td>
+            <td><input type="text" id="sum-exp" readonly style="font-weight: bold; font-size: 15px;"></td>
+        </tr>
+        <tr>
+            <td style="text-align: left; color: green; font-weight: bold;">Total Amount Collected</td>
+            <td><input type="text" id="sum-collected" readonly style="font-weight: bold; color: green; font-size: 18px;"></td>
+        </tr>
+    </table>
+
+    <table class="settlement-table" style="width: 100%;">
+        <tr>
+            <td width="20%" style="font-weight: bold;">Total Deposit</td>
+            <td width="15%"><input type="text"></td>
+            <td width="15%" style="font-weight: bold;">Cash</td>
+            <td width="20%"><input type="text"></td>
+            <td width="15%" style="font-weight: bold;">Bank</td>
+            <td width="15%"><input type="text"></td>
+        </tr>
+    </table>
+
+    <div style="display: flex; justify-content: space-between; margin-top: 60px; position: relative; z-index: 1;">
+        <div style="border-top: 1px solid #000; width: 180px; text-align: center; font-weight: bold;">Owner's Signature</div>
+        <div style="border-top: 1px solid #000; width: 180px; text-align: center; font-weight: bold;">Account Manager</div>
+    </div>
+</div>
+
+<script>
+    function updateClock() {
+        const now = new Date();
+        const dateOptions = { day: '2-digit', month: 'short', year: 'numeric' };
+        document.getElementById('real-date').innerText = "Date: " + now.toLocaleDateString('en-GB', dateOptions);
+        document.getElementById('real-time').innerText = "Time: " + now.toLocaleTimeString('en-US', { hour12: true });
+    }
+    setInterval(updateClock, 1000);
+
+    function toggleMenu() {
+        const dropdown = document.getElementById('myDropdown');
+        dropdown.style.display = (dropdown.style.display === 'block') ? 'none' : 'block';
+    }
+
+    function calcOil() {
+        let totalOil = 0;
+        document.querySelectorAll('.oil-part').forEach(input => {
+            totalOil += parseFloat(input.value) || 0;
+        });
+        document.getElementById('total-oil').value = totalOil || '';
+        calcSettlement();
+    }
+
+    function calcSettlement() {
+        let totalAmt = 0;
+        document.querySelectorAll('.set-amt').forEach(input => {
+            totalAmt += parseFloat(input.value) || 0;
+        });
+        document.getElementById('set-total-amt').value = totalAmt || '';
+        document.getElementById('sum-total').value = totalAmt || '';
+
+        let totalExp = 0;
+        document.querySelectorAll('.exp-input').forEach(input => {
+            totalExp += parseFloat(input.value) || 0;
+        });
+        document.getElementById('set-total-exp').value = totalExp || '';
+        document.getElementById('sum-exp').value = totalExp || '';
+
+        document.getElementById('sum-collected').value = (totalAmt - totalExp) || '';
+    }
+
+    window.onload = () => {
+        updateClock();
+        const logo = localStorage.getItem('invoiceLogo');
+        if(logo) {
+            document.getElementById('set-logo').src = logo;
+            document.getElementById('set-logo').style.display = 'block';
+            document.getElementById('settlement-watermark').src = logo;
+        }
+    }
+</script>
+
+</body>
+</html>

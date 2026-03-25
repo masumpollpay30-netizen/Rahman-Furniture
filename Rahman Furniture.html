@@ -1,0 +1,818 @@
+<!DOCTYPE html>
+<html lang="bn">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title id="page-title">Invoice_System</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Tiro+Bangla&display=swap');
+        :root { --navy: #001f3f; --light-navy: #f0f4f8; }
+        * { box-sizing: border-box; -webkit-print-color-adjust: exact; }
+        body { background-color: #f0f0f0; font-family: 'Times New Roman', 'Tiro Bangla', serif; margin: 0; padding: 0; }
+
+        .page {
+            width: 210mm; height: 296mm; padding: 10mm 12mm; margin: 5px auto;
+            background: white; position: relative; overflow: hidden; border: 1px solid #ddd;
+        }
+
+        #watermark {
+            position: absolute; top: 55%; left: 50%; transform: translate(-50%, -50%);
+            opacity: 0.12; width: 75%; pointer-events: none; z-index: 0; display: none;
+        }
+
+        .header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 10px; position: relative; z-index: 1; }
+        
+        .logo-box { width: 160px; height: 100px; display: flex; align-items: center; justify-content: center; cursor: pointer; overflow: hidden; margin-bottom: 5px; }
+        #main-logo { max-width: 100%; max-height: 100%; display: none; object-fit: contain; }
+        
+        .company-info h1 { margin: 0; font-size: 24px; color: var(--navy); text-transform: uppercase; }
+        .company-info p { margin: 2px 0; font-size: 13px; font-weight: bold; }
+
+        .inv-info-box { background: var(--light-navy); border: 2px solid var(--navy); padding: 10px; min-width: 220px; border-radius: 4px; }
+        .inv-info-box div { font-size: 14px; margin-bottom: 3px; color: var(--navy); }
+
+        .bill-to-table { width: 100%; border-collapse: collapse; border: 1.5px solid var(--navy); margin-bottom: 10px; }
+        .bill-to-table th { background: var(--navy); color: white; padding: 4px; font-size: 14px; }
+        .bill-to-table td { border: 1px solid var(--navy); padding: 4px; font-size: 13px; }
+        .bill-to-table input, .bill-to-table select { border: none; width: 100%; outline: none; background: transparent; font-size: 13px; font-weight: bold; }
+
+        .item-table { width: 100%; border-collapse: collapse; border: 1.5px solid var(--navy); }
+        .item-table th { background: var(--light-navy); color: var(--navy); padding: 8px; font-size: 14px; border: 1px solid var(--navy); }
+        .item-table td { border: 1px solid var(--navy); padding: 6px; text-align: center; font-size: 14px; }
+        .item-table input { border: none; width: 100%; text-align: center; font-size: 14px; outline: none; background: transparent; }
+        .desc-col { text-align: left !important; width: 45%; }
+        .desc-col input { text-align: left; }
+
+        .footer-grid { display: grid; grid-template-columns: 1.3fr 0.7fr; gap: 15px; margin-top: 15px; }
+        .photo-wrapper { display: flex; flex-direction: column; gap: 8px; }
+        .photo-row-top, .photo-row-bottom { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; width: 100%; }
+        
+        .photo-box { 
+            border: 1px dashed #aaa; 
+            height: 110px; 
+            display: flex; 
+            align-items: center; 
+            justify-content: center; 
+            font-size: 12px; 
+            color: #888; 
+            cursor: pointer; 
+            background: #fafafa; 
+            position: relative; 
+            border-radius: 4px; 
+        }
+        .photo-box img { width: 100%; height: 100%; object-fit: cover; border-radius: 3px; }
+        
+        .remove-btn { 
+            position: absolute; 
+            top: -5px; 
+            right: -5px; 
+            background: #ff4d4d; 
+            color: white; 
+            border: none; 
+            border-radius: 50%; 
+            width: 22px; 
+            height: 22px; 
+            cursor: pointer; 
+            z-index: 10; 
+            font-weight: bold; 
+            display: none;
+            align-items: center; 
+            justify-content: center; 
+            box-shadow: 0 2px 4px rgba(0,0,0,0.2); 
+        }
+        .photo-box.has-img:hover .remove-btn { display: flex; }
+
+        .totals-table { width: 100%; border-collapse: collapse; border: 1.5px solid var(--navy); }
+        .totals-table td { border: 1px solid var(--navy); padding: 6px 10px; text-align: right; font-size: 14px; }
+        .totals-table input, .totals-table select { text-align: right; font-weight: bold; width: 110px; border: none; outline: none; background: transparent; font-size: 14px; }
+
+        .bottom-row { display: flex; justify-content: space-between; align-items: flex-end; margin-top: 40px; }
+        .sig-line { border-top: 1.5px solid var(--navy); width: 200px; text-align: center; padding-top: 5px; font-weight: bold; font-size: 14px; }
+        .auth-sig-box { display: flex; flex-direction: column; align-items: center; width: 200px; }
+        .auth-name-input { border: none; outline: none; text-align: center; font-size: 13px; width: 100%; font-weight: bold; margin-bottom: 2px; color: var(--navy); }
+
+        .menu-container { position: fixed; top: 15px; right: 20px; z-index: 1000; }
+        .three-dot { font-size: 28px; cursor: pointer; color: white; background: #333; width: 45px; height: 45px; display: flex; align-items: center; justify-content: center; border-radius: 50%; box-shadow: 0 4px 8px rgba(0,0,0,0.3); }
+        .dropdown-content { display: none; position: absolute; right: 0; background: white; min-width: 220px; box-shadow: 0px 8px 16px rgba(0,0,0,0.2); border-radius: 8px; overflow: hidden; margin-top: 10px; }
+        .dropdown-content a { color: black; padding: 12px 16px; text-decoration: none; display: block; border-bottom: 1px solid #eee; font-size: 14px; cursor: pointer; font-weight: bold; }
+        .dropdown-content a:hover { background-color: #f1f1f1; color: #007bff; }
+
+        .modal { display: none; position: fixed; z-index: 2000; left: 0; top: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.6); backdrop-filter: blur(3px); }
+        .modal-content { background: white; margin: 2% auto; padding: 25px; width: 95%; max-width: 1200px; border-radius: 12px; max-height: 90vh; overflow-y: auto; box-shadow: 0 10px 30px rgba(0,0,0,0.5); }
+        
+        .history-table { width: 100%; border-collapse: collapse; margin-top: 15px; font-size: 12px; }
+        .history-table th { background: #f8f9fa; border: 1px solid #ccc; padding: 10px; text-align: center; font-weight: bold; }
+        .history-table td { border: 1px solid #ccc; padding: 8px; text-align: center; }
+        .btn-edit, .btn-pdf, .btn-cancel { background: #28a745; color: white; border: none; padding: 5px 10px; border-radius: 4px; cursor: pointer; font-size: 11px; margin: 2px; }
+        .btn-pdf { background: #dc3545; }
+        .btn-cancel { background: #ffc107; color: #000; }
+        
+        .status-processing { color: #dc3545; font-weight: bold; }
+        .status-delivered { color: #28a745; font-weight: bold; }
+        .status-cancelled { color: #6c757d; font-weight: bold; text-decoration: line-through; }
+        .status-arrow { cursor: pointer; font-size: 16px; margin-left: 5px; }
+
+        .form-group { margin-bottom: 15px; }
+        .form-group label { display: block; margin-bottom: 5px; font-weight: bold; color: var(--navy); }
+        .form-group input, .form-group select { width: 100%; padding: 10px; border: 1px solid #ccc; border-radius: 5px; font-size: 14px; }
+
+        .commission-summary { background: var(--light-navy); padding: 15px; border-radius: 8px; margin-bottom: 20px; }
+        .commission-summary h3 { margin-top: 0; color: var(--navy); }
+        .commission-card { background: white; padding: 15px; border-radius: 8px; border: 2px solid var(--navy); margin-bottom: 10px; }
+        .commission-amount { font-size: 24px; font-weight: bold; color: #28a745; }
+
+        /* PRINT VIEW FIX */
+        .note-print-view { display: none; }
+
+        @media print {
+            @page { size: A4; margin: 0; }
+            body { background: none; }
+            .page { margin: 0; border: none; height: 297mm; width: 210mm; padding: 10mm; page-break-inside: avoid; }
+            .no-print, .remove-btn, .menu-container { display: none !important; }
+            
+            /* Hide placeholders in print */
+            ::placeholder { color: transparent !important; }
+            ::-webkit-input-placeholder { color: transparent !important; }
+            
+            .photo-box { border: none !important; background: transparent !important; display: flex !important; }
+            .photo-box:not(.has-img) { display: none !important; }
+            .photo-box.has-img { display: flex !important; }
+            .photo-box img { display: block !important; }
+            .photo-box span { display: none !important; }
+            
+            .photo-wrapper { display: flex !important; }
+            .photo-row-top, .photo-row-bottom { display: grid !important; }
+            
+            #invoice-note { display: none !important; }
+            .note-print-view { 
+                display: block !important; 
+                width: 100%; 
+                min-height: 45px; 
+                border: 1px solid var(--navy); 
+                border-radius: 4px; 
+                padding: 5px; 
+                font-size: 12px; 
+                margin-top: 2px;
+                white-space: pre-wrap; 
+            }
+            
+            .footer-grid { display: grid !important; grid-template-columns: 1.3fr 0.7fr !important; }
+            .totals-table { page-break-inside: avoid; width: 100% !important; }
+            .totals-table td { font-size: 14px !important; padding: 6px 10px !important; }
+            .logo-box { border: none !important; }
+            #main-logo { display: block !important; width: auto; max-width: 160px; max-height: 100px; }
+            input, textarea, select { border: none !important; color: black !important; -webkit-print-color-adjust: exact; }
+        }
+    </style>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+</head>
+<body>
+
+<div class="menu-container no-print">
+    <div class="three-dot" onclick="toggleMenu()">⋮</div>
+    <div id="myDropdown" class="dropdown-content">
+        <a onclick="showModal('companySettingsModal')">🏢 Company Settings</a>
+        <a onclick="showInvoiceHistory()">📜 All Invoice History</a>
+        <a onclick="showCommissionSystem()">💰 Sales Commission</a>
+    </div>
+</div>
+
+<div id="companySettingsModal" class="modal no-print">
+    <div class="modal-content">
+        <h3 style="border-bottom: 2px solid var(--navy); padding-bottom: 10px; display: flex; justify-content: space-between; align-items: center;">
+            <span>🏢 Company Settings</span>
+            <span onclick="closeModal('companySettingsModal')" style="cursor: pointer; color: #dc3545; font-size: 28px; line-height: 1;" title="Close">&times;</span>
+        </h3>
+        <div class="form-group">
+            <label>Company Name:</label>
+            <input type="text" id="edit-company-name" placeholder="Rahman Furniture">
+        </div>
+        <div class="form-group">
+            <label>Address:</label>
+            <input type="text" id="edit-address" placeholder="Madaninagar Gol Chattar, Siddhirganj">
+        </div>
+        <div class="form-group">
+            <label>Phone Number:</label>
+            <input type="text" id="edit-phone" placeholder="+8801794526688">
+        </div>
+        <div class="form-group">
+            <label>Company Logo:</label>
+            <input type="file" id="edit-logo" accept="image/*">
+        </div>
+        <button onclick="saveCompanySettings()" style="padding:10px 20px; background:#28a745; color:white; border:none; border-radius:4px; cursor:pointer; font-weight: bold;">Save Changes</button>
+        <button onclick="closeModal('companySettingsModal')" style="padding:10px 20px; background:#6c757d; color:white; border:none; border-radius:4px; margin-left: 10px; cursor:pointer;">Cancel</button>
+    </div>
+</div>
+
+<div id="invoiceHistoryModal" class="modal no-print">
+    <div class="modal-content">
+        <h3 style="border-bottom: 2px solid var(--navy); padding-bottom: 10px; display: flex; justify-content: space-between; align-items: center;">
+            <span>📜 All Invoice History</span>
+            <span onclick="closeModal('invoiceHistoryModal')" style="cursor: pointer; color: #dc3545; font-size: 28px; line-height: 1;" title="Close">&times;</span>
+        </h3>
+        <div id="invoiceHistoryContent"></div>
+        <button onclick="closeModal('invoiceHistoryModal')" style="padding:10px 20px; background:#6c757d; color:white; border:none; border-radius:4px; margin-top: 15px; cursor:pointer;">Close</button>
+        <button onclick="clearAllHistory()" style="padding:10px 20px; background:#dc3545; color:white; border:none; border-radius:4px; margin-top: 15px; margin-left: 10px; cursor:pointer;">🗑️ Clear All History (Free Space)</button>
+    </div>
+</div>
+
+<div id="commissionModal" class="modal no-print">
+    <div class="modal-content">
+        <h3 style="border-bottom: 2px solid var(--navy); padding-bottom: 10px; display: flex; justify-content: space-between; align-items: center;">
+            <span>💰 Sales Commission System (1%)</span>
+            <span onclick="closeModal('commissionModal')" style="cursor: pointer; color: #dc3545; font-size: 28px; line-height: 1;" title="Close">&times;</span>
+        </h3>
+        <div style="background: #f8f9fa; padding: 15px; border-radius: 8px; margin-bottom: 20px;">
+            <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 15px; margin-bottom: 15px;">
+                <div class="form-group" style="margin-bottom: 0;">
+                    <label>Month:</label>
+                    <select id="commission-month" onchange="updateCommissionReport()">
+                        <option value="">All Months</option>
+                        <option value="January">January</option>
+                        <option value="February">February</option>
+                        <option value="March">March</option>
+                        <option value="April">April</option>
+                        <option value="May">May</option>
+                        <option value="June">June</option>
+                        <option value="July">July</option>
+                        <option value="August">August</option>
+                        <option value="September">September</option>
+                        <option value="October">October</option>
+                        <option value="November">November</option>
+                        <option value="December">December</option>
+                    </select>
+                </div>
+                <div class="form-group" style="margin-bottom: 0;">
+                    <label>Start Date:</label>
+                    <input type="date" id="commission-start-date" onchange="updateCommissionReport()">
+                </div>
+                <div class="form-group" style="margin-bottom: 0;">
+                    <label>End Date:</label>
+                    <input type="date" id="commission-end-date" onchange="updateCommissionReport()">
+                </div>
+            </div>
+            <button onclick="exportCommissionPDF()" style="padding:10px 20px; background:#dc3545; color:white; border:none; border-radius:4px; cursor:pointer; font-weight: bold; width: 100%;">📄 Export as PDF</button>
+        </div>
+        <div id="commissionSummary"></div>
+        <div id="commissionDetails"></div>
+        <button onclick="closeModal('commissionModal')" style="padding:10px 20px; background:#6c757d; color:white; border:none; border-radius:4px; margin-top: 15px; cursor:pointer;">Close</button>
+    </div>
+</div>
+
+<div class="no-print" style="text-align:center; padding: 12px; background: #222; display: flex; justify-content: center; gap: 10px; position: sticky; top: 0; z-index: 100;">
+    <button onclick="saveAndPrint()" style="padding: 10px 25px; cursor: pointer; font-weight: bold; background: #28a745; color: white; border: none; border-radius: 4px;">Print / Save PDF</button>
+    <button onclick="prepareNextInvoice()" style="padding: 10px 20px; cursor: pointer; font-weight: bold; background: #007bff; color: white; border: none; border-radius: 4px;">Next Invoice</button>
+    <button onclick="clearCurrentData()" style="padding: 10px 20px; background: #dc3545; color: white; border: none; border-radius: 4px; font-weight: bold; cursor: pointer;">Reset Current</button>
+</div>
+
+<div class="page">
+    <img id="watermark" src="" alt="">
+    <div class="header">
+        <div>
+            <div class="logo-box" onclick="document.getElementById('logoInput').click()">
+                <span id="logoText" style="color: #888; font-size: 12px;">Click to Add Logo</span>
+                <img id="main-logo" src="" alt="Logo">
+            </div>
+            <input type="file" id="logoInput" hidden onchange="uploadLogo(this)">
+            <div class="company-info">
+                <h1 id="company-name-display">RAHMAN FURNITURE</h1>
+                <p id="disp-addr">📍 Madaninagar Gol Chattar, Siddhirganj, Narayanganj</p>
+                <p id="disp-phone">📞 Phone: +8801794526688</p>
+            </div>
+        </div>
+        <div class="inv-info-box">
+            <div><b>Invoice No:</b> <span id="inv-no">2416</span></div>
+            <div><b>Date:</b> <span id="date"></span></div>
+            <div><b>Time:</b> <span id="clock" style="font-weight: bold;"></span></div>
+        </div>
+    </div>
+
+    <table class="bill-to-table" id="bill-info">
+        <tr><th colspan="4">BILL TO</th></tr>
+        <tr>
+            <td width="15%"><b>Name:</b></td><td><input type="text" id="c-name" placeholder="Ex: Mr. Masum Billah"></td>
+            <td width="15%"><b>Phone:</b></td><td><input type="text" id="c-phone" placeholder="01876366738"></td>
+        </tr>
+        <tr><td><b>Address:</b></td><td colspan="3"><input type="text" id="c-address" placeholder="Full Address Here"></td></tr>
+        <tr>
+            <td><b>PS:</b></td><td><input type="text" id="c-ps" placeholder="Demra"></td>
+            <td><b>PO:</b></td><td><input type="text" id="c-po" placeholder="Saruliya"></td>
+        </tr>
+        <tr>
+            <td><b>District:</b></td><td><input type="text" id="c-dist" placeholder="Dhaka"></td>
+            <td><b>NID/Passport:</b></td><td><input type="text" id="c-nid" placeholder="123456789"></td>
+        </tr>
+        <tr>
+            <td><b>Delivery Time:</b></td>
+            <td colspan="3"><input type="text" id="delivery-time" placeholder="e.g., 2-3 days"></td>
+        </tr>
+    </table>
+
+    <table class="item-table" id="itemTable">
+        <thead>
+            <tr><th width="5%">SL</th><th class="desc-col">Item Description</th><th width="10%">Qty</th><th width="15%">Rate</th><th width="15%">Amount</th></tr>
+        </thead>
+        <tbody id="item-tbody">
+            <tr>
+                <td class="sl-no">1.</td>
+                <td class="desc-col"><input type="text" placeholder="Item name..." onkeydown="handleRowKeys(event, this)"></td>
+                <td><input type="number" class="qty" value="0" oninput="calc()"></td>
+                <td><input type="number" class="rate" value="0" oninput="calc()"></td>
+                <td class="row-total">0</td>
+            </tr>
+        </tbody>
+    </table>
+
+    <div class="footer-grid">
+        <div class="photo-wrapper">
+            <div class="photo-row-top">
+                <div class="photo-box" onclick="triggerFile(this)"><span>+ Add Photo</span><input type="file" hidden accept="image/*" onchange="preview(this)"></div>
+                <div class="photo-box" onclick="triggerFile(this)"><span>+ Add Photo</span><input type="file" hidden accept="image/*" onchange="preview(this)"></div>
+                <div class="photo-box" onclick="triggerFile(this)"><span>+ Add Photo</span><input type="file" hidden accept="image/*" onchange="preview(this)"></div>
+            </div>
+            <div class="photo-row-bottom">
+                <div class="photo-box" onclick="triggerFile(this)"><span>+ Add Photo</span><input type="file" hidden accept="image/*" onchange="preview(this)"></div>
+                <div class="photo-box" onclick="triggerFile(this)"><span>+ Add Photo</span><input type="file" hidden accept="image/*" onchange="preview(this)"></div>
+                <div class="photo-box" onclick="triggerFile(this)"><span>+ Add Photo</span><input type="file" hidden accept="image/*" onchange="preview(this)"></div>
+            </div>
+            <div style="margin-top:5px;">
+                <b style="font-size: 12px;">Note:</b>
+                <textarea id="invoice-note" class="no-print" style="width:100%; height:45px; border:1px solid var(--navy); border-radius:4px; resize:none; font-size: 12px; padding:5px;" placeholder="Write any special instructions..."></textarea>
+                <div id="note-output" class="note-print-view"></div>
+            </div>
+        </div>
+        <div>
+            <table class="totals-table">
+                <tr><td>Sub Total</td><td id="sub">0</td></tr>
+                <tr><td>Discount</td><td><input type="number" id="disc" value="0" oninput="calc()"></td></tr>
+                <tr><td><b>Total Amount</b></td><td id="grand">0</td></tr>
+                <tr><td>Paid Amount</td><td><input type="number" id="paid" value="0" oninput="calc()"></td></tr>
+                <tr><td><b style="color: red;">Due Amount</b></td><td id="due" style="color: red; font-weight: bold;">0</td></tr>
+                <tr><td>Payment</td><td><select id="pay-method" style="border:none; font-weight:bold; outline:none;"><option>Cash</option><option>Bkash</option><option>Nagad</option><option>Bank</option></select></td></tr>
+            </table>
+        </div>
+    </div>
+
+    <div class="bottom-row">
+        <div class="sig-line">Customer Signature</div>
+        <div style="text-align: center; font-size: 10px;">
+            <img src="https://api.qrserver.com/v1/create-qr-code/?size=80x80&data=https://www.facebook.com/rahman.furniture123/" alt="QR" style="width:80px; height:80px;">
+            <p style="margin:2px 0; font-weight:bold;">Scan for Facebook</p>
+        </div>
+        <div class="auth-sig-box">
+            <input type="text" class="auth-name-input" id="admin-name" placeholder="Salesperson Name" oninput="saveAdminName()">
+            <div class="sig-line">Authorized Signature</div>
+        </div>
+    </div>
+</div>
+
+<script>
+    function updateClock() {
+        const now = new Date();
+        document.getElementById('date').innerText = now.toLocaleDateString('en-GB', { day:'2-digit', month:'short', year:'2-digit' });
+        document.getElementById('clock').innerText = now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+    }
+    setInterval(updateClock, 1000); 
+    updateClock();
+
+    window.onload = () => {
+        const companyName = localStorage.getItem('companyName') || 'RAHMAN FURNITURE';
+        const companyAddress = localStorage.getItem('compAddress') || 'Madaninagar Gol Chattar, Siddhirganj, Narayanganj';
+        const companyPhone = localStorage.getItem('compPhone') || '+8801794526688';
+        
+        document.getElementById('company-name-display').innerText = companyName;
+        document.getElementById('disp-addr').innerText = '📍 ' + companyAddress;
+        document.getElementById('disp-phone').innerText = '📞 Phone: ' + companyPhone;
+
+        const savedLogo = localStorage.getItem('invoiceLogo');
+        if(savedLogo) applyLogo(savedLogo);
+
+        const savedAdmin = localStorage.getItem('adminName');
+        if(savedAdmin) document.getElementById('admin-name').value = savedAdmin;
+
+        let inv = localStorage.getItem('invNum') || "2416";
+        document.getElementById('inv-no').innerText = inv;
+    };
+
+    function saveAdminName() { 
+        localStorage.setItem('adminName', document.getElementById('admin-name').value); 
+    }
+
+    function uploadLogo(input) {
+        const reader = new FileReader();
+        reader.onload = (e) => { 
+            try {
+                localStorage.setItem('invoiceLogo', e.target.result); 
+                applyLogo(e.target.result);
+            } catch(err) {
+                alert("Storage full! Cannot save logo.");
+            }
+        };
+        if(input.files[0]) reader.readAsDataURL(input.files[0]);
+    }
+
+    function applyLogo(src) {
+        document.getElementById('logoText').style.display = 'none';
+        document.getElementById('main-logo').src = src; 
+        document.getElementById('main-logo').style.display = 'block';
+        document.getElementById('watermark').src = src; 
+        document.getElementById('watermark').style.display = 'block';
+    }
+
+    function triggerFile(box) { 
+        if(!box.classList.contains('has-img')) box.querySelector('input').click(); 
+    }
+
+    function preview(input) {
+        if (input.files && input.files[0]) {
+            const reader = new FileReader();
+            reader.onload = (e) => {
+                const box = input.parentElement;
+                box.innerHTML = `<img src="${e.target.result}"><button class="remove-btn" onclick="removeImg(this)">✕</button>`;
+                box.classList.add('has-img');
+            };
+            reader.readAsDataURL(input.files[0]);
+        }
+    }
+
+    function removeImg(btn) {
+        const box = btn.parentElement;
+        box.innerHTML = '<span>+ Add Photo</span><input type="file" hidden accept="image/*" onchange="preview(this)">';
+        box.classList.remove('has-img');
+    }
+
+    function handleRowKeys(event, input) {
+        if (event.key === 'Enter') {
+            event.preventDefault();
+            addNewRow();
+        }
+    }
+
+    function addNewRow() {
+        const tbody = document.getElementById('item-tbody');
+        const rowCount = tbody.rows.length + 1;
+        const newRow = tbody.insertRow();
+        newRow.innerHTML = `
+            <td class="sl-no">${rowCount}.</td>
+            <td class="desc-col"><input type="text" placeholder="Item name..." onkeydown="handleRowKeys(event, this)"></td>
+            <td><input type="number" class="qty" value="0" oninput="calc()"></td>
+            <td><input type="number" class="rate" value="0" oninput="calc()"></td>
+            <td class="row-total">0</td>
+        `;
+        newRow.querySelector('input').focus();
+    }
+
+    function calc() {
+        let subtotal = 0;
+        const rows = document.querySelectorAll('#item-tbody tr');
+        rows.forEach(row => {
+            const qty = parseFloat(row.querySelector('.qty').value) || 0;
+            const rate = parseFloat(row.querySelector('.rate').value) || 0;
+            const total = qty * rate;
+            row.querySelector('.row-total').innerText = total;
+            subtotal += total;
+        });
+        document.getElementById('sub').innerText = subtotal;
+        const discount = parseFloat(document.getElementById('disc').value) || 0;
+        const grand = subtotal - discount;
+        document.getElementById('grand').innerText = grand;
+        const paid = parseFloat(document.getElementById('paid').value) || 0;
+        const due = grand - paid;
+        document.getElementById('due').innerText = due;
+    }
+
+    function toggleMenu() {
+        const dropdown = document.getElementById('myDropdown');
+        dropdown.style.display = dropdown.style.display === 'block' ? 'none' : 'block';
+    }
+
+    function showModal(modalId) {
+        document.getElementById(modalId).style.display = 'block';
+        toggleMenu();
+        if(modalId === 'companySettingsModal') {
+            document.getElementById('edit-company-name').value = localStorage.getItem('companyName') || 'RAHMAN FURNITURE';
+            document.getElementById('edit-address').value = localStorage.getItem('compAddress') || 'Madaninagar Gol Chattar, Siddhirganj, Narayanganj';
+            document.getElementById('edit-phone').value = localStorage.getItem('compPhone') || '+8801794526688';
+        }
+    }
+
+    function closeModal(modalId) { document.getElementById(modalId).style.display = 'none'; }
+
+    function saveCompanySettings() {
+        const companyName = document.getElementById('edit-company-name').value;
+        const address = document.getElementById('edit-address').value;
+        const phone = document.getElementById('edit-phone').value;
+        document.getElementById('company-name-display').innerText = companyName;
+        document.getElementById('disp-addr').innerText = '📍 ' + address;
+        document.getElementById('disp-phone').innerText = '📞 Phone: ' + phone;
+        localStorage.setItem('companyName', companyName);
+        localStorage.setItem('compAddress', address);
+        localStorage.setItem('compPhone', phone);
+        const logoFile = document.getElementById('edit-logo').files[0];
+        if(logoFile) {
+            const reader = new FileReader();
+            reader.onload = function(e) { 
+                try {
+                    localStorage.setItem('invoiceLogo', e.target.result); applyLogo(e.target.result); 
+                } catch(err) {
+                    alert("Storage full! Logo not saved.");
+                }
+            };
+            reader.readAsDataURL(logoFile);
+        }
+        closeModal('companySettingsModal');
+        alert('Company settings saved successfully!');
+    }
+
+    function collectInvoiceData() {
+        const items = [];
+        const rows = document.querySelectorAll('#item-tbody tr');
+        rows.forEach(row => {
+            const desc = row.querySelector('.desc-col input').value;
+            const qty = row.querySelector('.qty').value;
+            const rate = row.querySelector('.rate').value;
+            const total = row.querySelector('.row-total').innerText;
+            if(desc || qty > 0) items.push({ desc, qty, rate, total });
+        });
+        const photos = [];
+        document.querySelectorAll('.photo-box.has-img img').forEach(img => photos.push(img.src));
+        return {
+            invoiceNo: document.getElementById('inv-no').innerText,
+            date: document.getElementById('date').innerText,
+            time: document.getElementById('clock').innerText,
+            customerName: document.getElementById('c-name').value,
+            customerPhone: document.getElementById('c-phone').value,
+            customerAddress: document.getElementById('c-address').value,
+            customerPS: document.getElementById('c-ps').value,
+            customerPO: document.getElementById('c-po').value,
+            customerDistrict: document.getElementById('c-dist').value,
+            customerNID: document.getElementById('c-nid').value,
+            deliveryTime: document.getElementById('delivery-time').value,
+            items: items,
+            note: document.getElementById('invoice-note').value,
+            photos: photos,
+            subtotal: document.getElementById('sub').innerText,
+            discount: document.getElementById('disc').value,
+            grandTotal: document.getElementById('grand').innerText,
+            paid: document.getElementById('paid').value,
+            due: document.getElementById('due').innerText,
+            paymentMethod: document.getElementById('pay-method').value,
+            salesman: document.getElementById('admin-name').value,
+            deliveryStatus: 'Processing',
+            commissionStatus: 'Active',
+            savedDate: new Date().toISOString()
+        };
+    }
+
+    function saveInvoiceToHistory(invoiceData) {
+        let history = JSON.parse(localStorage.getItem('invoiceHistory') || '[]');
+        const existingIndex = history.findIndex(inv => inv.invoiceNo === invoiceData.invoiceNo);
+        if(existingIndex >= 0) {
+            invoiceData.deliveryStatus = history[existingIndex].deliveryStatus;
+            invoiceData.commissionStatus = history[existingIndex].commissionStatus;
+            invoiceData.savedDate = history[existingIndex].savedDate;
+            history[existingIndex] = invoiceData;
+        } else { history.push(invoiceData); }
+        
+        try {
+            localStorage.setItem('invoiceHistory', JSON.stringify(history));
+        } catch(e) {
+            console.warn("Storage is full!");
+            alert("⚠️ সতর্কতা: ব্রাউজার স্টোরেজ ফুল হয়ে গেছে! আপনার Print এবং Next Invoice কাজ করবে, কিন্তু নতুন হিস্টোরি সেভ হচ্ছে না। জায়গা ফাঁকা করতে All Invoice History থেকে পুরনো হিস্টোরি ক্লিয়ার করুন।");
+        }
+    }
+
+    function saveCommission(invoiceData) {
+        const salesperson = invoiceData.salesman || 'Unknown';
+        const saleAmount = parseFloat(invoiceData.grandTotal) || 0;
+        const commissionRate = 0.01;
+        const commission = saleAmount * commissionRate;
+        const date = new Date();
+        const month = date.toLocaleString('default', { month: 'long' });
+        const commissionData = {
+            invoiceNo: invoiceData.invoiceNo, date: invoiceData.date, month: month, salesperson: salesperson,
+            customerName: invoiceData.customerName, customerPhone: invoiceData.customerPhone,
+            saleAmount: saleAmount, commission: commission, status: invoiceData.commissionStatus || 'Active'
+        };
+        let commissions = JSON.parse(localStorage.getItem('salesCommissions') || '[]');
+        const existingIndex = commissions.findIndex(c => c.invoiceNo === invoiceData.invoiceNo);
+        if(existingIndex >= 0) commissions[existingIndex] = commissionData;
+        else commissions.push(commissionData);
+        
+        try {
+            localStorage.setItem('salesCommissions', JSON.stringify(commissions));
+        } catch(e) {
+            console.warn("Storage is full for commissions!");
+        }
+    }
+
+    function cancelCommission(invoiceNo) {
+        if(confirm('Cancel commission for Invoice ' + invoiceNo + '?')) {
+            let history = JSON.parse(localStorage.getItem('invoiceHistory') || '[]');
+            const invoice = history.find(inv => inv.invoiceNo === invoiceNo);
+            if(invoice) { 
+                invoice.commissionStatus = 'Cancelled'; 
+                try { localStorage.setItem('invoiceHistory', JSON.stringify(history)); } catch(e){} 
+            }
+            let commissions = JSON.parse(localStorage.getItem('salesCommissions') || '[]');
+            const commission = commissions.find(c => c.invoiceNo === invoiceNo);
+            if(commission) { 
+                commission.status = 'Cancelled'; 
+                try { localStorage.setItem('salesCommissions', JSON.stringify(commissions)); } catch(e){} 
+            }
+            updateCommissionReport();
+            alert('Commission cancelled successfully!');
+        }
+    }
+
+    function showInvoiceHistory() {
+        const history = JSON.parse(localStorage.getItem('invoiceHistory') || '[]');
+        let html = '<table class="history-table"><thead><tr>';
+        html += '<th>SL</th><th>Date</th><th>Customer</th><th>Phone</th><th>Address</th><th>Total</th><th>Salesman</th><th>Delivery</th><th>Commission</th><th>Actions</th></tr></thead><tbody>';
+        if(history.length === 0) { html += '<tr><td colspan="10" style="text-align:center; padding:20px;">No invoice history found</td></tr>'; } 
+        else {
+            history.reverse().forEach((inv, idx) => {
+                const statusClass = inv.deliveryStatus === 'Delivered' ? 'status-delivered' : 'status-processing';
+                const statusText = inv.deliveryStatus || 'Processing';
+                const arrow = inv.deliveryStatus === 'Delivered' ? '' : '<span class="status-arrow" onclick="event.stopPropagation(); changeDeliveryStatus(\'' + inv.invoiceNo + '\'); return false;">→</span>';
+                const commStatus = inv.commissionStatus || 'Active';
+                const commClass = commStatus === 'Cancelled' ? 'status-cancelled' : 'status-delivered';
+                html += `<tr><td>${history.length - idx}</td><td>${inv.date}</td><td>${inv.customerName}</td><td>${inv.customerPhone}</td><td>${inv.customerAddress}</td><td><b>${parseFloat(inv.grandTotal).toLocaleString()} BDT</b></td><td>${inv.salesman || 'N/A'}</td><td class="${statusClass}">${statusText} ${arrow}</td><td class="${commClass}">${commStatus}</td><td><button class="btn-edit" onclick="reEditInvoice('${inv.invoiceNo}')">Re-edit</button><button class="btn-pdf" onclick="downloadInvoicePDF('${inv.invoiceNo}')">PDF</button>${commStatus === 'Active' ? '<button class="btn-cancel" onclick="cancelCommission(\'' + inv.invoiceNo + '\')">Cancel</button>' : ''}</td></tr>`;
+            });
+        }
+        html += '</tbody></table>';
+        document.getElementById('invoiceHistoryContent').innerHTML = html;
+        showModal('invoiceHistoryModal');
+    }
+
+    function clearAllHistory() {
+        if(confirm("আপনি কি নিশ্চিত যে আপনি সমস্ত ইনভয়েস হিস্টোরি মুছে ফেলতে চান? এটি আপনার ব্রাউজারের স্টোরেজ ফুল সমস্যা সমাধান করবে।")) {
+            localStorage.removeItem('invoiceHistory');
+            showInvoiceHistory();
+            alert("হিস্টোরি সফলভাবে মুছে ফেলা হয়েছে! এখন ব্রাউজারে স্পেস ফাঁকা হয়েছে।");
+        }
+    }
+
+    function changeDeliveryStatus(invoiceNo) {
+        let history = JSON.parse(localStorage.getItem('invoiceHistory') || '[]');
+        const invoice = history.find(inv => inv.invoiceNo === invoiceNo);
+        if(invoice && invoice.deliveryStatus !== 'Delivered') {
+            if(confirm('Change status to Delivered?')) { 
+                invoice.deliveryStatus = 'Delivered'; 
+                try { localStorage.setItem('invoiceHistory', JSON.stringify(history)); } catch(e){} 
+                showInvoiceHistory(); 
+                alert('Status changed to Delivered!'); 
+            }
+        }
+        return false;
+    }
+
+    function reEditInvoice(invoiceNo) {
+        const history = JSON.parse(localStorage.getItem('invoiceHistory') || '[]');
+        const invoice = history.find(inv => inv.invoiceNo === invoiceNo);
+        if(invoice) {
+            closeModal('invoiceHistoryModal');
+            document.getElementById('inv-no').innerText = invoice.invoiceNo;
+            document.getElementById('c-name').value = invoice.customerName;
+            document.getElementById('c-phone').value = invoice.customerPhone;
+            document.getElementById('c-address').value = invoice.customerAddress;
+            document.getElementById('c-ps').value = invoice.customerPS || '';
+            document.getElementById('c-po').value = invoice.customerPO || '';
+            document.getElementById('c-dist').value = invoice.customerDistrict || '';
+            document.getElementById('c-nid').value = invoice.customerNID || '';
+            document.getElementById('delivery-time').value = invoice.deliveryTime || '';
+            document.getElementById('invoice-note').value = invoice.note || '';
+            document.getElementById('disc').value = invoice.discount;
+            document.getElementById('paid').value = invoice.paid;
+            document.getElementById('pay-method').value = invoice.paymentMethod || 'Cash';
+            document.getElementById('admin-name').value = invoice.salesman;
+            const tbody = document.getElementById('item-tbody');
+            tbody.innerHTML = '';
+            invoice.items.forEach((item, idx) => {
+                const newRow = tbody.insertRow();
+                newRow.innerHTML = `<td class="sl-no">${idx + 1}.</td><td class="desc-col"><input type="text" value="${item.desc}" placeholder="Item name..." onkeydown="handleRowKeys(event, this)"></td><td><input type="number" class="qty" value="${item.qty}" oninput="calc()"></td><td><input type="number" class="rate" value="${item.rate}" oninput="calc()"></td><td class="row-total">${item.total}</td>`;
+            });
+            if(invoice.photos && invoice.photos.length > 0) {
+                const photoBoxes = document.querySelectorAll('.photo-box');
+                invoice.photos.forEach((photoData, idx) => {
+                    if(idx < photoBoxes.length) {
+                        const box = photoBoxes[idx];
+                        box.innerHTML = `<img src="${photoData}"><button class="remove-btn" onclick="removeImg(this)">✕</button>`;
+                        box.classList.add('has-img');
+                    }
+                });
+            }
+            calc();
+        }
+    }
+
+    function downloadInvoicePDF(invoiceNo) {
+        reEditInvoice(invoiceNo);
+        setTimeout(() => saveAndPrint(), 500);
+    }
+
+    function saveAndPrint() {
+        const noteValue = document.getElementById('invoice-note').value;
+        document.getElementById('note-output').innerText = noteValue;
+
+        const invoiceData = collectInvoiceData();
+        saveInvoiceToHistory(invoiceData);
+        saveCommission(invoiceData);
+        
+        const authName = document.getElementById('admin-name').value || 'Invoice';
+        const invoiceNo = document.getElementById('inv-no').innerText;
+        document.title = `${authName.replace(/\s+/g, '')}_Invoice_${invoiceNo}`;
+        setTimeout(() => window.print(), 300);
+    }
+
+    function showCommissionSystem() { updateCommissionReport(); showModal('commissionModal'); }
+
+    function updateCommissionReport() {
+        const month = document.getElementById('commission-month').value;
+        const startDate = document.getElementById('commission-start-date').value;
+        const endDate = document.getElementById('commission-end-date').value;
+        let commissions = JSON.parse(localStorage.getItem('salesCommissions') || '[]');
+        if(month) commissions = commissions.filter(c => c.month === month);
+        if(startDate && endDate) {
+            commissions = commissions.filter(c => {
+                const parts = c.date.split('/');
+                if(parts.length < 3) return true;
+                const commDate = new Date(parts[2], parts[1] - 1, parts[0]);
+                return commDate >= new Date(startDate) && commDate <= new Date(endDate);
+            });
+        }
+        commissions = commissions.filter(c => c.status === 'Active');
+        const salespeople = {};
+        commissions.forEach(c => {
+            if(!salespeople[c.salesperson]) salespeople[c.salesperson] = { totalSales: 0, totalCommission: 0, invoices: [] };
+            salespeople[c.salesperson].totalSales += c.saleAmount;
+            salespeople[c.salesperson].totalCommission += c.commission;
+            salespeople[c.salesperson].invoices.push(c);
+        });
+        let summaryHtml = '<div class="commission-summary"><h3>👥 Salesperson Summary (1% Commission)</h3>';
+        Object.keys(salespeople).forEach(name => {
+            const data = salespeople[name];
+            summaryHtml += `<div class="commission-card"><h4 style="margin: 0 0 10px 0; color: var(--navy);">👤 ${name}</h4><div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 15px; margin-bottom: 10px;"><div><p style="margin: 0; font-size: 11px; color: #666;">Total Invoices</p><p style="margin: 5px 0; font-size: 18px; font-weight: bold;">${data.invoices.length}</p></div><div><p style="margin: 0; font-size: 11px; color: #666;">Total Sales</p><p style="margin: 5px 0; font-size: 18px; font-weight: bold;">${data.totalSales.toLocaleString()} BDT</p></div><div><p style="margin: 0; font-size: 11px; color: #666;">Commission (1%)</p><p style="margin: 5px 0; font-size: 18px; font-weight: bold; color: #28a745;">${data.totalCommission.toLocaleString()} BDT</p></div></div></div>`;
+        });
+        if(Object.keys(salespeople).length === 0) summaryHtml += '<p style="text-align: center; padding: 20px; color: #666;">No commission data found.</p>';
+        summaryHtml += '</div>';
+        document.getElementById('commissionSummary').innerHTML = summaryHtml;
+        let detailsHtml = '<h3>📋 Detailed Commission Report</h3>';
+        if(commissions.length > 0) {
+            detailsHtml += '<table class="history-table"><thead><tr><th>SL</th><th>Invoice</th><th>Date</th><th>Salesperson</th><th>Customer</th><th>Sale</th><th>Commission</th><th>Actions</th></tr></thead><tbody>';
+            let sl = 1;
+            commissions.sort((a, b) => new Date(b.date) - new Date(a.date)).forEach(c => {
+                detailsHtml += `<tr><td>${sl++}</td><td><b>${c.invoiceNo}</b></td><td>${c.date}</td><td>${c.salesperson}</td><td>${c.customerName}</td><td>${c.saleAmount.toLocaleString()} BDT</td><td><b style="color: #28a745;">${c.commission.toLocaleString()} BDT</b></td><td><button class="btn-edit" onclick="reEditInvoice('${c.invoiceNo}'); closeModal('commissionModal');">Edit</button><button class="btn-cancel" onclick="cancelCommission('${c.invoiceNo}')">Cancel</button></td></tr>`;
+            });
+            detailsHtml += '</tbody></table>';
+        } else { detailsHtml += '<p style="text-align: center; padding: 20px; color: #666;">No records found.</p>'; }
+        document.getElementById('commissionDetails').innerHTML = detailsHtml;
+    }
+
+    function exportCommissionPDF() {
+        const month = document.getElementById('commission-month').value;
+        const companyName = document.getElementById('company-name-display').innerText;
+        let commissions = JSON.parse(localStorage.getItem('salesCommissions') || '[]');
+        if(month) commissions = commissions.filter(c => c.month === month);
+        commissions = commissions.filter(c => c.status === 'Active');
+        if(commissions.length === 0) { alert('No commission data to export!'); return; }
+        const { jsPDF } = window.jspdf;
+        const doc = new jsPDF();
+        let y = 20;
+        doc.setFontSize(18); doc.text(companyName, 105, y, { align: 'center' }); y += 10;
+        doc.setFontSize(14); doc.text('Sales Commission Report (1%)', 105, y, { align: 'center' }); y += 10;
+        doc.save(`Commission_Report_${month || 'All'}.pdf`);
+    }
+
+    function prepareNextInvoice() {
+        if(confirm('Save current invoice and move to next?')) {
+            const invoiceData = collectInvoiceData();
+            saveInvoiceToHistory(invoiceData);
+            saveCommission(invoiceData);
+            
+            let currentInv = parseInt(document.getElementById('inv-no').innerText);
+            let nextInv = (isNaN(currentInv) ? 2488 : currentInv) + 1;
+            
+            try {
+                localStorage.setItem('invNum', nextInv);
+            } catch(e) {
+                console.warn("Storage full, but trying to change invoice number.");
+            }
+            location.reload();
+        }
+    }
+
+    function clearCurrentData() { if(confirm("Reset all current invoice data?")) location.reload(); }
+
+    window.onclick = function(event) {
+        if (!event.target.matches('.three-dot')) {
+            var dropdowns = document.getElementsByClassName("dropdown-content");
+            for (var i = 0; i < dropdowns.length; i++) {
+                if (dropdowns[i].style.display === 'block') dropdowns[i].style.display = 'none';
+            }
+        }
+    }
+</script>
+</body>
+</html>
