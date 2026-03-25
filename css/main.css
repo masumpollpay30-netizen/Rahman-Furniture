@@ -1,0 +1,19 @@
+/* Main CSS file for Rahman Furniture */
+
+body {
+    font-family: Arial, sans-serif;
+    margin: 0;
+    padding: 0;
+}
+
+.header {
+    background: #f8f8f8;
+    padding: 20px;
+    text-align: center;
+}
+
+.footer {
+    background: #f8f8f8;
+    padding: 10px;
+    text-align: center;
+}
